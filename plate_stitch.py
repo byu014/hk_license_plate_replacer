@@ -124,83 +124,91 @@ def write_plate_image(img_path, json_path, out_dir, label_txt, lp_dir_single, lp
         #pdb.set_trace()
         if img is None:
             continue
-        for rr, det in enumerate(corner[bname]):
-            if not det['text']:
-                  continue
-            first_char = det['text'][0]
-            if first_char in chars:
-                continue
+        # if img.shape[1] > 3000 or img.shape[0] > 3000:
+        #     continue
+        try:
+            for rr, det in enumerate(corner[bname]):
+                if not det['text']:
+                    continue
+                first_char = det['text'][0]
+                if first_char in chars:
+                    continue
 
-            print('### {}: Processing {}'.format(i, bname.encode('utf8')))
-            plate_type = 'single_row'
-            if 'plate_type' in det:
-                plate_type = det['plate_type']
+                print('### {}: Processing {}'.format(i, bname.encode('utf8')))
+                plate_type = 'single_row'
+                if 'plate_type' in det:
+                    plate_type = det['plate_type']
 
-            corner_pts = det['coordinates']
-            if len(corner_pts) < 8:
-                print('{}: {} length of pts shorter than 8'.format(i, bname.encode('utf8')))
-                continue
-            corner_pts = corner_pts[0:8]
-            plate_img, M, maxWidth, maxHeight = four_point_transform(img, corner_pts)
-            
-            #pdb.set_trace()
-            if plate_type == "single_row":
-                src_img = random.choice(hklp_singleList)
-                dst_img = img
-
-                stitched_img,corner_pts = stitch(src_img[1], dst_img, corner_pts)
-                key = bname.replace('.jpg', '')
-                stitched_path = os.path.join(stitched_dir,  bname.replace('.jpg', '_stitched.jpg'))
-                cv2.imwrite(stitched_path, stitched_img)
-                plate_chars,_ = os.path.basename(src_img[0]).split('_')
-                line = construct_ocr_label(plate_chars, stitched_path)
-                line.encode('utf8')
-                fo1.write("%s" % line)
+                corner_pts = det['coordinates']
+                if len(corner_pts) < 8:
+                    print('{}: {} length of pts shorter than 8'.format(i, bname.encode('utf8')))
+                    continue
+                corner_pts = corner_pts[0:8]
+                plate_img, M, maxWidth, maxHeight = four_point_transform(img, corner_pts)
                 
+                #pdb.set_trace()
+                if plate_type == "single_row":
+                    src_img = random.choice(hklp_singleList)
+                    dst_img = img
+                    plate_chars,_ = os.path.basename(src_img[0]).split('_')
+                    cv2.imshow('',src_img[1])
+                    cv2.waitKey(0)
+                    print plate_chars
+                    stitched_img,corner_pts = stitch(src_img[1], dst_img, corner_pts)
+                    cv2.imshow('',stitched_img)
+                    cv2.waitKey(0)
+                    key = bname.replace('.jpg', '')
+                    stitched_path = os.path.join(stitched_dir,  bname.replace('.jpg', '_stitched.jpg'))
+                    cv2.imwrite(stitched_path, stitched_img)
+                    line = construct_ocr_label(plate_chars, stitched_path)
+                    print line.encode('utf8')
+                    fo1.write("%s" % line)
+                    
 
-                out_path = os.path.join(out_dir,  bname.replace('.jpg', '_plate.jpg'))
-                cv2.imwrite(out_path, plate_img)
-                line = construct_ocr_label(det['text'], out_path)
-                print line.encode('utf8')
-                fo.write("%s" % line)
-                # corner_results.append(corner_pts)
-                corner_results[key] = corner_pts
-                # plate_type_results.append(plate_type)
-                plate_type_results[key] = plate_type
-                
-            if plate_type == "double_row":
-                src_img = random.choice(hklp_doubleList)
-                dst_img = img
+                    out_path = os.path.join(out_dir,  bname.replace('.jpg', '_plate.jpg'))
+                    cv2.imwrite(out_path, plate_img)
+                    line = construct_ocr_label(det['text'], out_path)
+                    print line.encode('utf8')
+                    fo.write("%s" % line)
+                    # corner_results.append(corner_pts)
+                    corner_results[key] = corner_pts
+                    # plate_type_results.append(plate_type)
+                    plate_type_results[key] = plate_type
+                    
+                if plate_type == "double_row":
+                    src_img = random.choice(hklp_doubleList)
+                    dst_img = img
+                    stitched_img, corner_pts = stitch(src_img[1], dst_img, corner_pts)
+                    key = bname.replace('.jpg', '')
+                    stitched_path = os.path.join(stitched_dir,  bname.replace('.jpg', '_stitched.jpg'))
+                    cv2.imwrite(stitched_path, stitched_img)
+                    plate_chars,_ = os.path.basename(src_img[0]).split('_')
+                    line = construct_ocr_label(plate_chars, stitched_path) 
+                    
+                    line.encode('utf8')
+                    fo1.write("%s" % line)
 
-                stitched_img, corner_pts = stitch(src_img[1], dst_img, corner_pts)
-                key = bname.replace('.jpg', '')
-                stitched_path = os.path.join(stitched_dir,  bname.replace('.jpg', '_stitched.jpg'))
-                cv2.imwrite(stitched_path, stitched_img)
-                plate_chars,_ = os.path.basename(src_img[0]).split('_')
-                line = construct_ocr_label(plate_chars, stitched_path) 
-                
-                line.encode('utf8')
-                fo1.write("%s" % line)
+                    out_path1 = os.path.join(out_dir, bname.replace('.jpg', '_plate1.jpg'))
+                    out_path2 = os.path.join(out_dir, bname.replace('.jpg', '_plate2.jpg'))
+                    height, width = plate_img.shape[0:2]
+                    plate_img1 = plate_img[:height/2,:]
+                    plate_img2 = plate_img[height/2:,:]
 
-                out_path1 = os.path.join(out_dir, bname.replace('.jpg', '_plate1.jpg'))
-                out_path2 = os.path.join(out_dir, bname.replace('.jpg', '_plate2.jpg'))
-                height, width = plate_img.shape[0:2]
-                plate_img1 = plate_img[:height/2,:]
-                plate_img2 = plate_img[height/2:,:]
+                    line1 = construct_ocr_label(det['text'][:2], out_path1)
+                    line2 = construct_ocr_label(det['text'][2:], out_path2)
+                    cv2.imwrite(out_path1, plate_img1)
+                    cv2.imwrite(out_path2, plate_img2)
 
-                line1 = construct_ocr_label(det['text'][:2], out_path1)
-                line2 = construct_ocr_label(det['text'][2:], out_path2)
-                cv2.imwrite(out_path1, plate_img1)
-                cv2.imwrite(out_path2, plate_img2)
-
-                print line1.encode('utf8')
-                print line2.encode('utf8')
-                fo.write("%s" % line1)
-                fo.write("%s" % line2)
-                # corner_results.append(corner_pts)
-                # plate_type_results.append(plate_type)
-                corner_results[key] = corner_pts
-                plate_type_results[key] = plate_type
+                    print line1.encode('utf8')
+                    print line2.encode('utf8')
+                    fo.write("%s" % line1)
+                    fo.write("%s" % line2)
+                    # corner_results.append(corner_pts)
+                    # plate_type_results.append(plate_type)
+                    corner_results[key] = corner_pts
+                    plate_type_results[key] = plate_type
+        except:
+            continue
     fo.close()
     fo1.close()
     ocrlabel_to_jsonlabel(stitched_json, stitched_label_txt ,stitched_dir,corner_results, plate_type_results)
@@ -233,6 +241,14 @@ def parse_args():
 if __name__ == '__main__':
 
     args = parse_args()
+    try:
+        shutil.rmtree(args.plate_dir)
+    except:
+        pass
+    try:
+        shutil.rmtree(args.stitched_dir)
+    except:
+        pass
     try:
         os.mkdir(args.plate_dir)
     except:
