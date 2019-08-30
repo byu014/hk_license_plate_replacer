@@ -152,11 +152,11 @@ def write_plate_image(img_path, json_path, out_dir, label_txt, lp_dir_single, lp
                     dst_img = img
                     plate_chars,_ = os.path.basename(src_img[0]).split('_')
                     #cv2.imshow('',src_img[1])
-                    cv2.waitKey(0)
+                    # cv2.waitKey(0)
                     print plate_chars
                     stitched_img,corner_pts = stitch(src_img[1], dst_img, corner_pts)
                     #cv2.imshow('',stitched_img)
-                    cv2.waitKey(0)
+                    # cv2.waitKey(0)
                     key = bname.replace('.jpg', '')
                     stitched_path = os.path.join(stitched_dir,  bname.replace('.jpg', '_stitched.jpg'))
                     cv2.imwrite(stitched_path, stitched_img)
